@@ -1,25 +1,13 @@
 'use client'
+
 import React, { useState } from 'react';
-import Dashboard from '../components/Dashboard'
-import SubscriptionModal from '../components/SubscriptionModal'
-import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
+import Dashboard from '@/components/Dashboard';
+import SubscriptionModal from '@/components/SubscriptionModal';
+import { TIERS, TierType } from '@/app/tiers';
 
-import AppClient from '../components/AppClient'
-
-export const TIERS = {
-  FREE: 'Free',
-  BASIC: 'Basic',
-  PREMIUM: 'Premium'
-} as const;
-
-export type TierType = typeof TIERS[keyof typeof TIERS];
-
-
-
-
-const App = () => {
+const AppClient = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userTier, setUserTier] = useState<TierType>(TIERS.FREE);
   const [showSubscription, setShowSubscription] = useState(false);
@@ -71,4 +59,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default AppClient;
