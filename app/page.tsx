@@ -1,12 +1,10 @@
 'use client'
+
 import React, { useState } from 'react';
-import Dashboard from '../components/Dashboard'
-import SubscriptionModal from '../components/SubscriptionModal'
+import Dashboard from '@/components/Dashboard'
+import SubscriptionModal from '@/components/SubscriptionModal'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-
-import AppClient from '../components/AppClient'
 
 export const TIERS = {
   FREE: 'Free',
@@ -16,11 +14,9 @@ export const TIERS = {
 
 export type TierType = typeof TIERS[keyof typeof TIERS];
 
-
-
-
-const App = () => {
+export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState<number>(1); // Simulated user ID
   const [userTier, setUserTier] = useState<TierType>(TIERS.FREE);
   const [showSubscription, setShowSubscription] = useState(false);
 
@@ -31,7 +27,6 @@ const App = () => {
   const handleUpgrade = (newTier: TierType) => {
     setUserTier(newTier);
     setShowSubscription(false);
-    // In a real app, this would trigger a payment process
     alert(`Upgraded to ${newTier} tier! (Simulated)`);
   };
 
@@ -56,9 +51,10 @@ const App = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
       <Dashboard 
-        onLogout={handleLogout} 
+        handleLogout={handleLogout}  // Changed from onLogout to handleLogout
         userTier={userTier}
-        onOpenSubscription={handleOpenSubscription}
+        userId={userId}
+        handleOpenSubscription={handleOpenSubscription}  // Changed from onOpenSubscription to handleOpenSubscription
       />
       {showSubscription && (
         <SubscriptionModal 
@@ -69,6 +65,4 @@ const App = () => {
       )}
     </div>
   );
-};
-
-export default App;
+}

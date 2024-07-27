@@ -1,136 +1,92 @@
 'use client'
 
-import React, { useState } from 'react';
-import axios from 'axios';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
-type SleepQuality = 'Poor' | 'Fair' | 'Good' | 'Excellent';
-
-interface SleepRecord {
-  date: string;
-  duration: number;
-  quality: SleepQuality;
-  notes: string;
+interface SleepTrackerProps {
+  userId: number;
 }
 
-const SleepTracker: React.FC = () => {
-  const [sleepRecords, setSleepRecords] = useState<SleepRecord[]>([]);
-  const [simpleSleep, setSimpleSleep] = useState('');
-  const [detailedSleep, setDetailedSleep] = useState<SleepRecord>({
-    date: new Date().toISOString().split('T')[0],
-    duration: 0,
-    quality: 'Good',
-    notes: ''
-  });
+const TEST_USER_ID = 1;
 
-  const saveSleep = async (sleep: SleepRecord) => {
+const SleepTracker: React.FC<SleepTrackerProps> = ({ userId }) => {
+  const [sleep, setSleep] = useState({ duration: '', quality: 'Good' })
+  const [feedback, setFeedback] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     try {
-      await axios.post('/api/save-data', {
-        type: 'sleep',
-        data: sleep
-      });
-      // Optionally, show a success message
+      const response = await fetch('/api/save-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          userId: TEST_USER_ID, 
+          type: 'sleep', 
+          data: {...sleep, duration: parseFloat(sleep.duration)}
+        })
+      })
+      if (response.ok) {
+        const score = calculateScore({...sleep, duration: parseFloat(sleep.duration)})
+        setFeedback(`Sleep logged successfully! Your score: ${score}/100`)
+        setSleep({ duration: '', quality: 'Good' })
+      } else {
+        setFeedback('Failed to save sleep data')
+      }
     } catch (error) {
-      console.error('Failed to save sleep data', error);
-      // Optionally, show an error message
+      console.error('Error saving sleep data:', error)
+      setFeedback('An error occurred while saving sleep data')
     }
-  };
+  }
 
-  const addSimpleSleep = () => {
-    if (simpleSleep.trim() !== '') {
-      const newSleep: SleepRecord = { 
-        date: new Date().toISOString().split('T')[0], 
-        duration: Number(simpleSleep), 
-        quality: 'Good', 
-        notes: '' 
-      };
-      setSleepRecords([...sleepRecords, newSleep]);
-      saveSleep(newSleep);
-      setSimpleSleep('');
+  const calculateScore = (sleep: { duration: number; quality: string }) => {
+    let score = 0
+    if (sleep.duration >= 7 && sleep.duration <= 9) {
+      score += 70
+    } else if (sleep.duration >= 6 && sleep.duration < 7) {
+      score += 50
+    } else if (sleep.duration > 9 && sleep.duration <= 10) {
+      score += 50
+    } else {
+      score += 30
     }
-  };
 
-  const addDetailedSleep = () => {
-    if (detailedSleep.duration > 0) {
-      setSleepRecords([...sleepRecords, detailedSleep]);
-      saveSleep(detailedSleep);
-      setDetailedSleep({ date: new Date().toISOString().split('T')[0], duration: 0, quality: 'Good', notes: '' });
+    switch (sleep.quality) {
+      case 'Excellent': score += 30; break;
+      case 'Good': score += 20; break;
+      case 'Fair': score += 10; break;
+      default: score += 0;
     }
-  };
+
+    return Math.min(score, 100)
+  }
 
   return (
-    <Card className="w-full max-w-3xl mx-auto">
-      <CardHeader>
-        <h2 className="text-2xl font-bold text-center">Sleep Tracker</h2>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="simple">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="simple">Quick Add</TabsTrigger>
-            <TabsTrigger value="detailed">Detailed Add</TabsTrigger>
-          </TabsList>
-          <TabsContent value="simple">
-            <div className="flex mb-4">
-              <Input
-                type="number"
-                placeholder="Sleep duration (hours)"
-                value={simpleSleep}
-                onChange={(e) => setSimpleSleep(e.target.value)}
-                className="flex-grow mr-2"
-              />
-              <Button onClick={addSimpleSleep}>Add</Button>
-            </div>
-          </TabsContent>
-          <TabsContent value="detailed">
-            <div className="space-y-4">
-              <Input
-                type="date"
-                value={detailedSleep.date}
-                onChange={(e) => setDetailedSleep({...detailedSleep, date: e.target.value})}
-              />
-              <Input
-                type="number"
-                placeholder="Sleep duration (hours)"
-                value={detailedSleep.duration}
-                onChange={(e) => setDetailedSleep({...detailedSleep, duration: Number(e.target.value)})}
-              />
-              <select
-                value={detailedSleep.quality}
-                onChange={(e) => setDetailedSleep({...detailedSleep, quality: e.target.value as 'Poor' | 'Fair' | 'Good' | 'Excellent'})}
-                className="w-full p-2 border rounded"
-              >
-                <option value="Poor">Poor</option>
-                <option value="Fair">Fair</option>
-                <option value="Good">Good</option>
-                <option value="Excellent">Excellent</option>
-              </select>
-              <Textarea
-                placeholder="Additional notes"
-                value={detailedSleep.notes}
-                onChange={(e) => setDetailedSleep({...detailedSleep, notes: e.target.value})}
-              />
-              <Button onClick={addDetailedSleep} className="w-full">Add Detailed Sleep Record</Button>
-            </div>
-          </TabsContent>
-        </Tabs>
-        <div className="mt-6">
-          <h3 className="text-xl font-semibold mb-2">Sleep Log</h3>
-          <ul className="space-y-2">
-            {sleepRecords.map((record, index) => (
-              <li key={index} className="bg-blue-100 p-2 rounded">
-                <strong>{record.date}</strong> - {record.duration} hours, Quality: {record.quality}
-                {record.notes && <p className="text-sm mt-1">{record.notes}</p>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <Input
+        type="number"
+        value={sleep.duration}
+        onChange={(e) => setSleep({...sleep, duration: e.target.value})}
+        placeholder="Sleep Duration (hours)"
+        required
+        min="0"
+        step="0.5"
+        className="text-black"
+      />
+      <select
+        value={sleep.quality}
+        onChange={(e) => setSleep({...sleep, quality: e.target.value})}
+        className="w-full p-2 border rounded text-black"
+      >
+        <option value="Excellent">Excellent</option>
+        <option value="Good">Good</option>
+        <option value="Fair">Fair</option>
+        <option value="Poor">Poor</option>
+      </select>
+      <Button type="submit" className="w-full bg-indigo-500 hover:bg-indigo-600 text-white">Log Sleep</Button>
+      {feedback && <p className="mt-2 text-center text-white">{feedback}</p>}
+    </form>
+  )
+}
 
-export default SleepTracker;
+export default SleepTracker

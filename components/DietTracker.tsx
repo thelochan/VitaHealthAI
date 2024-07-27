@@ -1,144 +1,122 @@
-// components/DietTracker.tsx
 'use client'
 
-import React, { useState } from 'react';
-import axios from 'axios';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
-interface Meal {
-  name: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  notes: string;
+interface DietTrackerProps {
+  userId: number;
 }
 
-const DietTracker: React.FC = () => {
-  const [meals, setMeals] = useState<Meal[]>([]);
-  const [simpleMeal, setSimpleMeal] = useState('');
-  const [detailedMeal, setDetailedMeal] = useState<Meal>({
-    name: '',
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-    notes: ''
-  });
+const TEST_USER_ID = 1;
 
-  const saveMeal = async (meal: Meal) => {
+const DietTracker: React.FC<DietTrackerProps> = ({ userId }) => {
+  const [meal, setMeal] = useState({ type: 'Breakfast', calories: '', protein: '', carbs: '', fats: '' })
+  const [feedback, setFeedback] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     try {
-      await axios.post('/api/save-data', {
-        type: 'diet',
-        data: meal
-      });
-      // Optionally, show a success message
+      const response = await fetch('/api/save-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          userId: TEST_USER_ID, 
+          type: 'diet', 
+          data: {
+            ...meal,
+            calories: parseInt(meal.calories),
+            protein: parseInt(meal.protein),
+            carbs: parseInt(meal.carbs),
+            fats: parseInt(meal.fats)
+          }
+        })
+      })
+      if (response.ok) {
+        const score = calculateScore(meal)
+        setFeedback(`Meal logged successfully! Your score: ${score}/100`)
+        setMeal({ type: 'Breakfast', calories: '', protein: '', carbs: '', fats: '' })
+      } else {
+        setFeedback('Failed to save meal data')
+      }
     } catch (error) {
-      console.error('Failed to save meal data', error);
-      // Optionally, show an error message
+      console.error('Error saving meal data:', error)
+      setFeedback('An error occurred while saving meal data')
     }
-  };
+  }
 
-  const addSimpleMeal = () => {
-    if (simpleMeal.trim() !== '') {
-      const newMeal = { name: simpleMeal, calories: 0, protein: 0, carbs: 0, fat: 0, notes: '' };
-      setMeals([...meals, newMeal]);
-      saveMeal(newMeal);
-      setSimpleMeal('');
-    }
-  };
+  const calculateScore = (meal: { calories: string; protein: string; carbs: string; fats: string }) => {
+    const calories = parseInt(meal.calories)
+    const protein = parseInt(meal.protein)
+    const carbs = parseInt(meal.carbs)
+    const fats = parseInt(meal.fats)
+    
+    let score = 0
+    const totalNutrients = protein + carbs + fats
+    if (totalNutrients > 0) {
+      const proteinPercentage = (protein * 4 / calories) * 100
+      const carbsPercentage = (carbs * 4 / calories) * 100
+      const fatsPercentage = (fats * 9 / calories) * 100
 
-  const addDetailedMeal = () => {
-    if (detailedMeal.name !== '') {
-      setMeals([...meals, detailedMeal]);
-      saveMeal(detailedMeal);
-      setDetailedMeal({ name: '', calories: 0, protein: 0, carbs: 0, fat: 0, notes: '' });
+      score += Math.min(proteinPercentage / 30 * 33, 33)
+      score += Math.min(carbsPercentage / 40 * 34, 34)
+      score += Math.min(fatsPercentage / 30 * 33, 33)
     }
-  };
+    return Math.round(score)
+  }
 
   return (
-    <Card className="w-full max-w-3xl mx-auto">
-      <CardHeader>
-        <h2 className="text-2xl font-bold text-center">Diet Tracker</h2>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="simple">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="simple">Quick Add</TabsTrigger>
-            <TabsTrigger value="detailed">Detailed Add</TabsTrigger>
-          </TabsList>
-          <TabsContent value="simple">
-            <div className="flex mb-4">
-              <Input
-                type="text"
-                placeholder="Enter meal (e.g., 'Grilled chicken salad')"
-                value={simpleMeal}
-                onChange={(e) => setSimpleMeal(e.target.value)}
-                className="flex-grow mr-2"
-              />
-              <Button onClick={addSimpleMeal}>Add</Button>
-            </div>
-          </TabsContent>
-          <TabsContent value="detailed">
-            <div className="space-y-4">
-              <Input
-                type="text"
-                placeholder="Meal Name"
-                value={detailedMeal.name}
-                onChange={(e) => setDetailedMeal({...detailedMeal, name: e.target.value})}
-              />
-              <Input
-                type="number"
-                placeholder="Calories"
-                value={detailedMeal.calories}
-                onChange={(e) => setDetailedMeal({...detailedMeal, calories: Number(e.target.value)})}
-              />
-              <Input
-                type="number"
-                placeholder="Protein (g)"
-                value={detailedMeal.protein}
-                onChange={(e) => setDetailedMeal({...detailedMeal, protein: Number(e.target.value)})}
-              />
-              <Input
-                type="number"
-                placeholder="Carbs (g)"
-                value={detailedMeal.carbs}
-                onChange={(e) => setDetailedMeal({...detailedMeal, carbs: Number(e.target.value)})}
-              />
-              <Input
-                type="number"
-                placeholder="Fat (g)"
-                value={detailedMeal.fat}
-                onChange={(e) => setDetailedMeal({...detailedMeal, fat: Number(e.target.value)})}
-              />
-              <Textarea
-                placeholder="Additional notes"
-                value={detailedMeal.notes}
-                onChange={(e) => setDetailedMeal({...detailedMeal, notes: e.target.value})}
-              />
-              <Button onClick={addDetailedMeal} className="w-full">Add Detailed Meal</Button>
-            </div>
-          </TabsContent>
-        </Tabs>
-        <div className="mt-6">
-          <h3 className="text-xl font-semibold mb-2">Meal Log</h3>
-          <ul className="space-y-2">
-            {meals.map((meal, index) => (
-              <li key={index} className="bg-green-100 p-2 rounded">
-                <strong>{meal.name}</strong>
-                {meal.calories > 0 && <p>Calories: {meal.calories}, Protein: {meal.protein}g, Carbs: {meal.carbs}g, Fat: {meal.fat}g</p>}
-                {meal.notes && <p className="text-sm mt-1">{meal.notes}</p>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <select
+        value={meal.type}
+        onChange={(e) => setMeal({...meal, type: e.target.value})}
+        className="w-full p-2 border rounded text-black"
+      >
+        <option value="Breakfast">Breakfast</option>
+        <option value="Lunch">Lunch</option>
+        <option value="Dinner">Dinner</option>
+        <option value="Snack">Snack</option>
+      </select>
+      <Input
+        type="number"
+        value={meal.calories}
+        onChange={(e) => setMeal({...meal, calories: e.target.value})}
+        placeholder="Calories"
+        required
+        min="0"
+        className="text-black"
+      />
+      <Input
+        type="number"
+        value={meal.protein}
+        onChange={(e) => setMeal({...meal, protein: e.target.value})}
+        placeholder="Protein (grams)"
+        required
+        min="0"
+        className="text-black"
+      />
+      <Input
+        type="number"
+        value={meal.carbs}
+        onChange={(e) => setMeal({...meal, carbs: e.target.value})}
+        placeholder="Carbs (grams)"
+        required
+        min="0"
+        className="text-black"
+      />
+      <Input
+        type="number"
+        value={meal.fats}
+        onChange={(e) => setMeal({...meal, fats: e.target.value})}
+        placeholder="Fats (grams)"
+        required
+        min="0"
+        className="text-black"
+      />
+      <Button type="submit" className="w-full bg-green-500 hover:bg-green-600 text-white">Log Meal</Button>
+      {feedback && <p className="mt-2 text-center text-white">{feedback}</p>}
+    </form>
+  )
+}
 
-export default DietTracker;
+export default DietTracker

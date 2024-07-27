@@ -1,10 +1,9 @@
-// components/ModalContent.tsx
 'use client'
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
-import { TierType, TIERS } from '@/app/tiers';
+import { TierType, TIERS } from '@/app/page';
 import ExerciseTracker from './ExerciseTracker';
 import DietTracker from './DietTracker';
 import SleepTracker from './SleepTracker';
@@ -14,19 +13,20 @@ interface ModalContentProps {
   title: string;
   onClose: () => void;
   userTier: TierType;
+  userId: number;
 }
 
-const ModalContent: React.FC<ModalContentProps> = ({ title, onClose, userTier }) => {
+const ModalContent: React.FC<ModalContentProps> = ({ title, onClose, userTier, userId }) => {
   const renderContent = () => {
     switch (title.toLowerCase()) {
       case 'ai exercise analysis':
-        return <ExerciseTracker />;
+        return <ExerciseTracker userId={userId} />;
       case 'smart diet insights':
-        return <DietTracker />;
+        return <DietTracker userId={userId} />;
       case 'advanced sleep metrics':
-        return <SleepTracker />;
+        return <SleepTracker userId={userId} />;
       case 'cognitive health tracking':
-        return <CognitiveTracker />;
+        return <CognitiveTracker userId={userId} />;
       default:
         return <p className="text-blue-200">This is a placeholder for the {title} functionality.</p>;
     }

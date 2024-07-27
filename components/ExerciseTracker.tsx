@@ -1,130 +1,82 @@
-// components/ExerciseTracker.tsx
 'use client'
 
-import React, { useState } from 'react';
-import axios from 'axios';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
-interface Exercise {
-  type: string;
-  duration: number;
-  intensity: 'Low' | 'Medium' | 'High';
-  notes: string;
+interface ExerciseTrackerProps {
+  userId: number;
 }
+const TEST_USER_ID = 1;
 
-const ExerciseTracker: React.FC = () => {
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [simpleExercise, setSimpleExercise] = useState('');
-  const [detailedExercise, setDetailedExercise] = useState<Exercise>({
-    type: '',
-    duration: 0,
-    intensity: 'Medium',
-    notes: ''
-  });
+const ExerciseTracker: React.FC<ExerciseTrackerProps> = ({ userId }) => {
+  const [exercise, setExercise] = useState({ type: '', duration: '', intensity: 'Medium' })
+  const [feedback, setFeedback] = useState('')
 
-  const saveExercise = async (exercise: Exercise) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     try {
-      await axios.post('/api/save-data', {
-        type: 'exercise',
-        data: exercise
-      });
-      // Optionally, show a success message
+      const response = await fetch('/api/save-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          userId: TEST_USER_ID, 
+          type: 'exercise', 
+          data: {...exercise, duration: parseInt(exercise.duration)}
+        })
+      })
+      if (response.ok) {
+        const score = calculateScore({...exercise, duration: parseInt(exercise.duration)})
+        setFeedback(`Exercise logged successfully! Your score: ${score}/100`)
+        setExercise({ type: '', duration: '', intensity: 'Medium' })
+      } else {
+        setFeedback('Failed to save exercise data')
+      }
     } catch (error) {
-      console.error('Failed to save exercise data', error);
-      // Optionally, show an error message
+      console.error('Error saving exercise data:', error)
+      setFeedback('An error occurred while saving exercise data')
     }
-  };
+  }
 
-  const addSimpleExercise = () => {
-    if (simpleExercise.trim() !== '') {
-      const newExercise = { type: simpleExercise, duration: 30, intensity: 'Medium' as const, notes: '' };
-      setExercises([...exercises, newExercise]);
-      saveExercise(newExercise);
-      setSimpleExercise('');
-    }
-  };
-
-  const addDetailedExercise = () => {
-    if (detailedExercise.type !== '') {
-      setExercises([...exercises, detailedExercise]);
-      saveExercise(detailedExercise);
-      setDetailedExercise({ type: '', duration: 0, intensity: 'Medium', notes: '' });
-    }
-  };
+  const calculateScore = (exercise: { duration: number; intensity: string }) => {
+    let score = 0
+    const intensityFactor = exercise.intensity === 'High' ? 2 : exercise.intensity === 'Medium' ? 1 : 0.5
+    score = (exercise.duration * intensityFactor / 150) * 100
+    return Math.min(Math.round(score), 100)
+  }
 
   return (
-    <Card className="w-full max-w-3xl mx-auto">
-      <CardHeader>
-        <h2 className="text-2xl font-bold text-center">Exercise Tracker</h2>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="simple">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="simple">Quick Add</TabsTrigger>
-            <TabsTrigger value="detailed">Detailed Add</TabsTrigger>
-          </TabsList>
-          <TabsContent value="simple">
-            <div className="flex mb-4">
-              <Input
-                type="text"
-                placeholder="Enter exercise (e.g., '30 min jogging')"
-                value={simpleExercise}
-                onChange={(e) => setSimpleExercise(e.target.value)}
-                className="flex-grow mr-2"
-              />
-              <Button onClick={addSimpleExercise}>Add</Button>
-            </div>
-          </TabsContent>
-          <TabsContent value="detailed">
-            <div className="space-y-4">
-              <Input
-                type="text"
-                placeholder="Exercise Type"
-                value={detailedExercise.type}
-                onChange={(e) => setDetailedExercise({...detailedExercise, type: e.target.value})}
-              />
-              <Input
-                type="number"
-                placeholder="Duration (minutes)"
-                value={detailedExercise.duration}
-                onChange={(e) => setDetailedExercise({...detailedExercise, duration: Number(e.target.value)})}
-              />
-              <select
-                value={detailedExercise.intensity}
-                onChange={(e) => setDetailedExercise({...detailedExercise, intensity: e.target.value as 'Low' | 'Medium' | 'High'})}
-                className="w-full p-2 border rounded"
-              >
-                <option value="Low">Low Intensity</option>
-                <option value="Medium">Medium Intensity</option>
-                <option value="High">High Intensity</option>
-              </select>
-              <Textarea
-                placeholder="Additional notes"
-                value={detailedExercise.notes}
-                onChange={(e) => setDetailedExercise({...detailedExercise, notes: e.target.value})}
-              />
-              <Button onClick={addDetailedExercise} className="w-full">Add Detailed Exercise</Button>
-            </div>
-          </TabsContent>
-        </Tabs>
-        <div className="mt-6">
-          <h3 className="text-xl font-semibold mb-2">Exercise Log</h3>
-          <ul className="space-y-2">
-            {exercises.map((exercise, index) => (
-              <li key={index} className="bg-purple-100 p-2 rounded">
-                <strong>{exercise.type}</strong> - {exercise.duration} minutes, {exercise.intensity} intensity
-                {exercise.notes && <p className="text-sm mt-1">{exercise.notes}</p>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <Input
+        type="text"
+        value={exercise.type}
+        onChange={(e) => setExercise({...exercise, type: e.target.value})}
+        placeholder="Exercise Type (e.g., Running, Cycling)"
+        required
+        className="text-black"
+      />
+      <Input
+        type="number"
+        value={exercise.duration}
+        onChange={(e) => setExercise({...exercise, duration: e.target.value})}
+        placeholder="Duration (minutes)"
+        required
+        min="1"
+        className="text-black"
+      />
+      <select
+        value={exercise.intensity}
+        onChange={(e) => setExercise({...exercise, intensity: e.target.value})}
+        className="w-full p-2 border rounded text-black"
+      >
+        <option value="Low">Low Intensity</option>
+        <option value="Medium">Medium Intensity</option>
+        <option value="High">High Intensity</option>
+      </select>
+      <Button type="submit" className="w-full bg-blue-500 hover:bg-blue-600 text-white">Log Exercise</Button>
+      {feedback && <p className="mt-2 text-center text-white">{feedback}</p>}
+    </form>
+  )
+}
 
-export default ExerciseTracker;
+export default ExerciseTracker
