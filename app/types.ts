@@ -1,4 +1,5 @@
-// app/tiers.ts
+// app/types.ts
+
 export const TIERS = {
     FREE: 'Free',
     BASIC: 'Basic',

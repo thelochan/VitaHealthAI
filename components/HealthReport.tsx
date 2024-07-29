@@ -1,29 +1,37 @@
-'use client'
-
 import React, { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { TierType } from '@/app/page'
+import { TierType } from '@/app/types'
 import { Line } from 'react-chartjs-2'
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
-import { Spinner } from '../components/ui/spinner'
-import { Alert } from '../components/ui/alert'
+import { 
+  Chart as ChartJS, 
+  CategoryScale, 
+  LinearScale, 
+  PointElement, 
+  LineElement, 
+  Title, 
+  Tooltip, 
+  Legend,
+  ChartOptions
+} from 'chart.js'
+import { Spinner } from '@/components/ui/spinner'
+import { Alert } from '@/components/ui/alert'
 import { useReactToPrint } from 'react-to-print'
-
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
 interface HealthReportProps {
   userTier: TierType;
   userId: number;
+  age: number | '';
 }
 
 interface UserData {
-  exercises: any[];
-  diets: any[];
-  sleeps: any[];
+  exercises: Array<{ date: string; duration: number }>;
+  diets: Array<{ date: string; calories: number }>;
+  sleeps: Array<{ date: string; duration: number }>;
 }
 
-const HealthReport: React.FC<HealthReportProps> = ({ userTier, userId }) => {
+const HealthReport: React.FC<HealthReportProps> = ({ userTier, userId, age }) => {
   const [report, setReport] = useState<UserData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,24 +54,25 @@ const HealthReport: React.FC<HealthReportProps> = ({ userTier, userId }) => {
     } catch (error) {
       console.error('Error generating report:', error)
       setError('Failed to generate health report. Please try again later.')
-      setReport(null)
     } finally {
       setLoading(false)
     }
   }
 
-  const closeReport = () => {
-    setReport(null)
-    setError(null)
+  const getAgeGroup = (age: number) => {
+    if (age < 18) return 'Teen';
+    if (age < 30) return 'Young Adult';
+    if (age < 50) return 'Adult';
+    return 'Senior';
   }
 
   const getChartData = () => {
-    if (!report) return null
+    if (!report) return null;
 
-    const dates = report.exercises.map(e => new Date(e.date).toLocaleDateString())
-    const exerciseDurations = report.exercises.map(e => e.duration)
-    const sleepDurations = report.sleeps.map(s => s.duration)
-    const calorieIntakes = report.diets.map(d => d.calories)
+    const dates = report.exercises.map(e => new Date(e.date).toLocaleDateString());
+    const exerciseDurations = report.exercises.map(e => e.duration);
+    const sleepDurations = report.sleeps.map(s => s.duration);
+    const calorieIntakes = report.diets.map(d => d.calories);
 
     return {
       labels: dates,
@@ -73,41 +82,31 @@ const HealthReport: React.FC<HealthReportProps> = ({ userTier, userId }) => {
           data: exerciseDurations,
           borderColor: 'rgb(75, 192, 192)',
           backgroundColor: 'rgba(75, 192, 192, 0.5)',
-          tension: 0.1,
-          yAxisID: 'y'
+          yAxisID: 'y',
         },
         {
           label: 'Sleep Duration (hours)',
           data: sleepDurations,
           borderColor: 'rgb(153, 102, 255)',
           backgroundColor: 'rgba(153, 102, 255, 0.5)',
-          tension: 0.1,
-          yAxisID: 'y1'
+          yAxisID: 'y1',
         },
         {
           label: 'Calorie Intake',
           data: calorieIntakes,
           borderColor: 'rgb(255, 99, 132)',
           backgroundColor: 'rgba(255, 99, 132, 0.5)',
-          tension: 0.1,
-          yAxisID: 'y2'
-        }
-      ]
-    }
-  }
+          yAxisID: 'y2',
+        },
+      ],
+    };
+  };
 
-  const chartOptions = {
+  const chartOptions: ChartOptions<'line'> = {
     responsive: true,
     interaction: {
       mode: 'index' as const,
       intersect: false,
-    },
-    stacked: false,
-    plugins: {
-      title: {
-        display: true,
-        text: 'Health Metrics Over Time',
-      },
     },
     scales: {
       y: {
@@ -144,7 +143,16 @@ const HealthReport: React.FC<HealthReportProps> = ({ userTier, userId }) => {
         },
       },
     },
-  }
+    plugins: {
+      title: {
+        display: true,
+        text: 'Health Metrics Over Time',
+      },
+      legend: {
+        display: true,
+      },
+    },
+  };
 
   const getExplanation = () => {
     if (!report) return null
@@ -153,8 +161,8 @@ const HealthReport: React.FC<HealthReportProps> = ({ userTier, userId }) => {
     const avgSleepDuration = report.sleeps.reduce((sum, s) => sum + s.duration, 0) / report.sleeps.length
     const avgCalories = report.diets.reduce((sum, d) => sum + d.calories, 0) / report.diets.length
 
-    // Caloric burn analysis (simplified estimation)
-    const avgCaloricBurn = avgExerciseDuration * 5 // Assuming 5 calories burned per minute of exercise
+
+   
 
     return (
       <div className="mt-4 space-y-4">
@@ -162,7 +170,7 @@ const HealthReport: React.FC<HealthReportProps> = ({ userTier, userId }) => {
         <div>
           <h4 className="text-xl font-semibold">Exercise</h4>
           <p>On average, you exercise for {avgExerciseDuration.toFixed(1)} minutes per session. Aim for at least 150 minutes of moderate activity per week.</p>
-          <p>Estimated average caloric burn: {avgCaloricBurn.toFixed(0)} calories per exercise session.</p>
+          <p>Estimated average caloric burn: {(avgExerciseDuration * 5).toFixed(0)} calories per exercise session.</p>
           {avgExerciseDuration < 30 && <p className="text-yellow-500">Consider increasing your exercise duration for better health benefits.</p>}
         </div>
         <div>
@@ -176,30 +184,15 @@ const HealthReport: React.FC<HealthReportProps> = ({ userTier, userId }) => {
           <p>You consume an average of {avgCalories.toFixed(0)} calories per recorded meal. Remember, an average adult needs about 2000-2500 calories per day.</p>
           {avgCalories > 800 && <p className="text-yellow-500">Your average meal seems high in calories. Consider balancing your diet with more low-calorie, nutrient-dense foods.</p>}
         </div>
-        <div>
-          <h4 className="text-xl font-semibold">Overall Health</h4>
-          <p>Based on your data, here are some recommendations:</p>
-          <ul className="list-disc list-inside">
-            <li>Maintain a consistent exercise routine</li>
-            <li>Aim for 7-9 hours of sleep each night</li>
-            <li>Balance your calorie intake with your activity level</li>
-            <li>Stay hydrated and include a variety of nutrients in your diet</li>
-          </ul>
-        </div>
       </div>
     )
   }
 
   return (
     <div className="mt-8">
-      {!report && (
-        <Button 
-          onClick={generateReport} 
-          className="mb-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition-all duration-200 ease-in-out transform hover:scale-105"
-        >
-          Generate Health Report
-        </Button>
-      )}
+      <Button onClick={generateReport} className="mb-4 bg-blue-500 hover:bg-blue-600 text-white">
+        Generate Health Report
+      </Button>
       {loading && (
         <div className="flex justify-center items-center">
           <Spinner className="w-8 h-8 text-blue-500" />
@@ -213,22 +206,14 @@ const HealthReport: React.FC<HealthReportProps> = ({ userTier, userId }) => {
       )}
       {report && (
         <div ref={reportRef} className="bg-white p-6 rounded-lg shadow-lg space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-3xl font-bold">Your Health Report</h2>
-            <div className="space-x-2">
-              <Button onClick={handlePrint} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
-                Print PDF
-              </Button>
-              <Button onClick={closeReport} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
-                Close Report
-              </Button>
-            </div>
-          </div>
-          <div className="bg-gray-100 p-4 rounded-lg">
+          <h2 className="text-3xl font-bold">Your Health Report</h2>
+          <div className="w-full h-64">
             {getChartData() && <Line data={getChartData()!} options={chartOptions} />}
           </div>
           {getExplanation()}
-          <p className="mt-4 text-sm text-gray-600">Your current tier: {userTier}</p>
+          <Button onClick={handlePrint} className="mt-4 bg-green-500 hover:bg-green-600 text-white">
+            Print Report
+          </Button>
         </div>
       )}
     </div>

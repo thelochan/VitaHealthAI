@@ -3,7 +3,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
-import { TierType, TIERS } from '@/app/page';
+import { TierType, TIERS } from '@/app/types';
 import ExerciseTracker from './ExerciseTracker';
 import DietTracker from './DietTracker';
 import SleepTracker from './SleepTracker';

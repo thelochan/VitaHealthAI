@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
-import { TierType, TIERS } from '../app/tiers';  // Adjust the import path as needed
+import { TierType, TIERS } from '../app/types';  // Adjust the import path as needed
 
 const TIER_FEATURES = {
   [TIERS.FREE]: [
