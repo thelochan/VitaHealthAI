@@ -7,7 +7,6 @@ import { TierType, TIERS } from '@/app/page';
 import ExerciseTracker from './ExerciseTracker';
 import DietTracker from './DietTracker';
 import SleepTracker from './SleepTracker';
-import CognitiveTracker from './CognitiveTracker';
 
 interface ModalContentProps {
   title: string;
@@ -25,8 +24,7 @@ const ModalContent: React.FC<ModalContentProps> = ({ title, onClose, userTier, u
         return <DietTracker userId={userId} />;
       case 'advanced sleep metrics':
         return <SleepTracker userId={userId} />;
-      case 'cognitive health tracking':
-        return <CognitiveTracker userId={userId} />;
+      
       default:
         return <p className="text-blue-200">This is a placeholder for the {title} functionality.</p>;
     }

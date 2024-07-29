@@ -53,16 +53,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
           });
           break;
-        case 'cognitive':
-          result = await prisma.cognitive.create({
-            data: {
-              userId: user.id,
-              type: data.type,
-              duration: data.duration,
-              difficulty: data.difficulty,
-            }
-          });
-          break;
         default:
           return res.status(400).json({ error: 'Invalid data type' });
       }

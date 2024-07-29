@@ -35,7 +35,6 @@ const Dashboard: React.FC<DashboardProps> = ({ handleLogout, userTier, userId, h
         <FeatureCard title="AI Exercise Analysis" icon={Activity} onClick={() => openModal('AI Exercise Analysis')}/>
         <FeatureCard title="Smart Diet Insights" icon={Utensils} onClick={() => openModal('Smart Diet Insights')}/>
         <FeatureCard title="Advanced Sleep Metrics" icon={Moon} onClick={() => openModal('Advanced Sleep Metrics')}/>
-        <FeatureCard title="Cognitive Health Tracking" icon={Brain} onClick={() => openModal('Cognitive Health Tracking')}/>
       </main>
       <div className="mt-8 flex justify-center">
         <HealthReport userTier={userTier} userId={userId} />

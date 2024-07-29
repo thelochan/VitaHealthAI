@@ -15,7 +15,6 @@ model User {
   exercises  Exercise[]
   diets      Diet[]
   sleeps     Sleep[]
-  cognitives Cognitive[]
 }
 
 model Exercise {
@@ -49,12 +48,3 @@ model Sleep {
   date     DateTime @default(now())
 }
 
-model Cognitive {
-  id         Int      @id @default(autoincrement())
-  user       User     @relation(fields: [userId], references: [id])
-  userId     Int
-  type       String
-  duration   Int
-  difficulty String
-  date       DateTime @default(now())
-}

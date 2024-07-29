@@ -16,7 +16,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           exercises: true,
           diets: true,
           sleeps: true,
-          cognitives: true
         }
       })
 
